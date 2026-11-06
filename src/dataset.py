@@ -179,3 +179,39 @@ class CamVidDataset(Dataset):
             img = (((img - m) * contrast + m) * brightness).clamp(0.0, 1.0) # clamp(0.0, 1.0) garantees all values stay in the [0,1] range
 
         return img, mask
+
+
+# --------------------------------------------------------------------------- #
+# Helpers
+# --------------------------------------------------------------------------- #
+def denormalize(img):
+    """Undo the ImageNet normalization(standardization): [3, H, W] tensor -> HxWx3 float array in [0, 1]."""
+    img = (img.cpu() * IMAGENET_STD + IMAGENET_MEAN).clamp(0, 1)
+    return img.permute(1, 2, 0).numpy()
+
+
+def get_dataloaders(data_dir, splits, batch_size=8, size=(352, 480),
+                    mask_suffix="_L", num_workers=2, ignore_names=("Void",)):
+    """
+    Args:
+        data_dir : root folder of the dataset (contains class_dict.csv).
+        splits   : {"train": (images_folder, masks_folder), "val": (...), "test": (...)}
+    Returns:
+        loaders (dict of DataLoader), mapper (ClassMapper)
+    """
+    mapper = ClassMapper(os.path.join(data_dir, "class_dict.csv"), ignore_names=ignore_names)
+
+    loaders = {}
+    for split, (img_folder, mask_folder) in splits.items():
+        is_train = split == "train" # to do the augmentation only if it is true
+        ds = CamVidDataset(
+            os.path.join(data_dir, img_folder),
+            os.path.join(data_dir, mask_folder),
+            mapper, size=size, mask_suffix=mask_suffix, augment=is_train,
+        )
+        loaders[split] = DataLoader(
+            ds, batch_size=batch_size, shuffle=is_train, num_workers=num_workers,
+            pin_memory=torch.cuda.is_available(), drop_last=is_train,
+        )
+    return loaders, mapper
+
