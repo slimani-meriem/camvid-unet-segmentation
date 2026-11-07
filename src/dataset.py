@@ -56,10 +56,10 @@ class ClassMapper:
     def __init__(self, class_dict_path, ignore_names=("Void",)):
         cd = pd.read_csv(class_dict_path)
         cd.columns = [c.strip().lower() for c in cd.columns]
-        cd["name"] = cd["name"].strip()
+        cd["name"] = cd["name"].astype(str).str.strip()
 
         ignore = {n.lower() for n in ignore_names}
-        keep = cd[~cd["name"].lower().isin(ignore)].reset_index(drop=True)
+        keep = cd[~cd["name"].str.lower().isin(ignore)].reset_index(drop=True)
 
         self.names = keep["name"].tolist()  # index -> name
         self.palette = keep[["r", "g", "b"]].to_numpy(dtype=np.uint8)  # index -> RGB
