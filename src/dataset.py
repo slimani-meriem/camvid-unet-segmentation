@@ -73,7 +73,7 @@ class ClassMapper:
     def _encode(rgb):
         """RGB -> one unique integer per color."""
         rgb = rgb.astype(np.uint32)
-        return (rgb[:, :, 0] << 16) | (rgb[:, :, 1] << 8) | rgb[:, :, 2]
+        return (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
 
     def rgb_to_index(self, rgb):
         """HxWx3 uint8 array -> HxW uint8 array of class indices."""
